@@ -1,0 +1,9 @@
+let attributes = this.*
+
+rule check_attributes when %attributes !empty {
+  "new_group_delay" not exists
+  "name" exists
+  "type" exists
+  "query" exists
+  "message" != ""
+}

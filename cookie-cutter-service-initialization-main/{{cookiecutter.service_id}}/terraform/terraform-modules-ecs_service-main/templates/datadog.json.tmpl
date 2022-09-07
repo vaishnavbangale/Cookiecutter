@@ -1,0 +1,70 @@
+[
+    {
+        "essential": true,
+        "name": "datadog-agent",
+        "image": "public.ecr.aws/datadog/agent:${datadog_agent_version}",
+        "cpu": 10,
+        "memory": 256,
+        "dockerLabels": ${dockerLabels},
+        "environmentFiles": [],
+        "environment": [
+            {
+                "name": "ECS_FARGATE",
+                "value": "true"
+            },
+            {
+                "name": "DD_SERVICE",
+                "value": "${application_name}"
+            },
+            {
+                "name": "DD_ENV",
+                "value": "${environment}"
+            },
+            {
+                "name": "DD_APM_ENABLED",
+                "value": "true"
+            },
+            {
+                "name": "DD_LOGS_ENABLED",
+                "value": "${log_files_enabled}"
+            },
+            {
+                "name": "DD_APM_NON_LOCAL_TRAFFIC",
+                "value": "true"
+            }
+        ],
+        "secrets": [
+            {
+                "name": "DD_API_KEY",
+                "valueFrom": "arn:aws:ssm:${region}:${account_id}:parameter/logging/datadog_token"
+            }
+        ],
+        "portMappings": [
+            {
+                "hostPort": 8126,
+                "protocol": "tcp",
+                "containerPort": 8126
+            }
+        ],
+        "mountPoints": []
+    },
+    {
+        "essential": true,
+        "image": "public.ecr.aws/aws-observability/aws-for-fluent-bit:${fluentbit_version}",
+        "name": "log_router",
+        "firelensConfiguration": {
+            "type": "fluentbit",
+            "options": {
+                "enable-ecs-log-metadata": "true",
+                "config-file-type": "file",
+                "config-file-value": "/fluent-bit/configs/${fluentbit_config_file}.conf"
+            }
+        },
+        "cpu": 10,
+        "environment": [],
+        "environmentFiles": [],
+        "mountPoints": [],
+        "portMappings": [],
+        "user": "0"
+    }
+]

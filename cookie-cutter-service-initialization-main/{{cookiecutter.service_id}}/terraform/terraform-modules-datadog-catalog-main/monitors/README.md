@@ -1,0 +1,1 @@
+Directory for monitor template files

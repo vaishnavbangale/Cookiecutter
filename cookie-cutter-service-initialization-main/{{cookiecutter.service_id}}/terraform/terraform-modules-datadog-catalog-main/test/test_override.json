@@ -1,0 +1,11 @@
+{
+    "name": "alb.HTTPCode_elb_5XX.override: ${lb_name}",
+    "type": "metric alert",
+    "query": "sum(last_5m):sum:aws.applicationelb.httpcode_elb_5xx{host:${lb_dns_name}} by {host}.as_count() > 0",
+    "message": "Overridden message. HTTPCode_elb_5XX monitor triggered for ${lb_name}. Error monitoring on number of HTTP 5xx errors returned by the load balancer. Notify: ${notification_targets}",
+    "evaluation_delay": 900,
+    "new_group_delay": 60,
+    "monitor_thresholds": {
+        "critical": 0
+    }
+}

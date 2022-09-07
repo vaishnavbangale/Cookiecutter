@@ -1,0 +1,19 @@
+version: "3.8"
+services:
+  {{ cookiecutter.service_id }}:
+    build:
+      context: .
+      args:
+        CODEARTIFACT_AUTH_TOKEN: "${CODEARTIFACT_AUTH_TOKEN}"
+    image: happymoney/{{ cookiecutter.service_id }}
+    container_name: {{ cookiecutter.service_id }}
+    ports:
+      - "{{cookiecutter.port}}:{{cookiecutter.port}}"
+    environment:
+      SERVER_PORT: {{cookiecutter.port}}
+      SPRING_PROFILES_ACTIVE: local
+
+networks:
+  default:
+    external: true
+    name: happymoney

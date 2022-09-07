@@ -1,0 +1,36 @@
+Configuration:
+  name: Default
+
+  Appenders:
+    Console:
+      name: Console_Appender
+      target: SYSTEM_OUT
+      JsonLayout:
+        compact: true
+        eventEol: true
+        properties: true
+        stacktraceAsString: true
+        objectMessageAsJsonObject: true
+        locationInfo: true
+        keyValuePair:
+          -
+            key: timestamp
+            value: "$${date:yyyy-MM-dd'T'HH:mm:ss.SSSXXX}"
+
+  Loggers:
+    Logger:
+      - name: {{cookiecutter.java_package}}
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: Console_Appender
+      - name: org.springframework
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: Console_Appender
+
+    Root:
+      level: error
+      AppenderRef:
+        - ref: Console_Appender

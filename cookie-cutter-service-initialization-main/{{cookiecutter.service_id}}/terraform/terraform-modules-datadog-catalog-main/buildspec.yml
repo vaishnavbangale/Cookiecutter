@@ -1,0 +1,59 @@
+version: 0.2
+env:
+  variables:
+    REPOSITORY_NAME: "terraform-modules-datadog-catalog"
+  parameter-store:
+    DD_APP_KEY: "/logging/datadog_app_key"    
+phases:
+  install:
+    commands:
+      - source ./scripts/install.sh
+      - ruby -v
+      - inspec version
+      - terragrunt --version
+      - tfenv list
+      - tflint -v
+      - go version
+      - cfn-guard --version
+      - echo $TERRAFORM_VERSION
+  build:
+    commands:
+      - mkdir temp_dir
+      - export GOROOT=/usr/local/go
+      - export GOPATH=$(pwd)/temp_dir
+      - export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+      - echo $cross_account_id
+      - | 
+         if [ ! -d "/root/.ssh" ] ; then
+           mkdir /root/.ssh
+         fi       
+      - chmod 700 /root/.ssh
+      - ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts
+      - $(aws ssm get-parameters --names "/devops/github/privkey" --with-decryption --region us-east-1 --query "Parameters[].Value" --output text > /root/.ssh/id_rsa)
+      - git_token=$(aws ssm get-parameters --names "/devops/github/oauth" --with-decryption --region us-east-1 --query "Parameters[].Value" --output text)
+      - chmod 600 /root/.ssh/id_rsa
+      - aws_credentials=$(aws sts assume-role --role-arn arn:aws:iam::${cross_account_id}:role/terraform --role-session-name "CodeBuild")
+      - export AWS_ACCESS_KEY_ID=$(echo $aws_credentials|jq '.Credentials.AccessKeyId'|tr -d '"')
+      - export AWS_SECRET_ACCESS_KEY=$(echo $aws_credentials|jq '.Credentials.SecretAccessKey'|tr -d '"')
+      - export AWS_SESSION_TOKEN=$(echo $aws_credentials|jq '.Credentials.SessionToken'|tr -d '"')
+      - echo $TERRAFORM_VERSION
+      - tfenv use $TERRAFORM_VERSION
+      - EXIT_STATUS=$?
+      - |
+         if [ "$EXIT_STATUS" -ne "0" ] ; then
+           tfenv install $TERRAFORM_VERSION;
+           tfenv use $TERRAFORM_VERSION;
+         fi
+      - terraform --version
+      - |
+          set -e
+          terraform fmt -recursive -check=true -write=false
+          pushd test
+          tflint -v && tflint --deep --var='id=test' --loglevel=warn .
+          ./../scripts/policy-test.sh $git_token
+          cd terratest
+          go get github.com/gruntwork-io/terratest/modules/terraform
+          go get github.com/stretchr/testify/assert
+          go test -v -timeout 60m
+          popd
+      - ./scripts/gittag.sh $git_token

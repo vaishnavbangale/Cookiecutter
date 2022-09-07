@@ -1,0 +1,20 @@
+{
+    "name": "ecs.service.cpuutilization: ${service_name}",
+    "type": "metric alert",
+    "query": "avg(last_15m):avg:aws.ecs.service.cpuutilization{servicename:${service_name}} by {servicename} > 80",
+    "message": "ecs service cpuutilization event monitor triggered for ${service_name}. Notify: ${notification_targets}",
+    "tags": [],
+    "options": {
+        "notify_audit": false,
+        "locked": false,
+        "timeout_h": 0,
+        "require_full_window": false,
+        "notify_no_data": false,
+        "renotify_interval": "0",
+        "evaluation_delay": 900,
+        "thresholds": {
+            "critical": 80
+        }
+    },
+    "priority": null
+}

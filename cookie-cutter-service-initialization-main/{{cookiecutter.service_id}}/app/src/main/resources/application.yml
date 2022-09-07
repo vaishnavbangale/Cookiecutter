@@ -1,0 +1,61 @@
+---
+aws:
+  paramstore:
+    region: us-east-1
+
+spring:
+  config:
+    import:
+      - "optional:aws-parameterstore:/api-platform/${spring.profiles.active}/{{cookiecutter.service_id}}/"
+      - "optional:aws-parameterstore:/api-platform/${spring.profiles.active}/common/"
+  main:
+    banner-mode: off
+  devtools:
+    livereload:
+      enabled: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://hmplatform-dev.oktapreview.com/oauth2/aus1yaledsAsfGLhY1d7 # replace with your Okta IDP
+      # Getting JWT from IDP
+      client:
+        registration:
+          okta:
+            client-id: <REPLACE WITH CLIENT ID>
+            client-secret: <REPLACE WITH SECRET>
+            authorization-grant-type: client_credentials
+            scope: HM
+        provider:
+          okta:
+            token-uri: https://hmplatform-dev.oktapreview.com/oauth2/aus1yaledsAsfGLhY1d7/v1/token # replace with your Okta IDP
+
+server:
+  port: {{cookiecutter.port}}
+logging:
+  config: classpath:log4j2.yml
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-components: always
+      show-details: always
+    loggers:
+      enabled: true
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: {{ cookiecutter.service_id }}
+    description:
+    version: ${dd.version:0.0.1}
+
+swagger:
+  base:
+    url: localhost:{{cookiecutter.port}}

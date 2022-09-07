@@ -1,0 +1,11 @@
+{
+    "service_name": "Cookiecutter Service",
+    "port": "8080",
+    "team_name": "example-team",
+    "project_domain": "example-domain",
+    "service_id": "{{ cookiecutter.service_name|lower|replace(' ', '-') }}",
+    "package_name": "{{ cookiecutter.service_id|replace('-', '_') }}",
+    "java_package": "com.happymoney.{{ cookiecutter.package_name }}",
+    "package_dir": "{{cookiecutter.java_package|replace('.', '/')}}",
+    "int_package": "com.happymoney.{{ cookiecutter.service_id|replace('-', '') }}.endpoint"
+}

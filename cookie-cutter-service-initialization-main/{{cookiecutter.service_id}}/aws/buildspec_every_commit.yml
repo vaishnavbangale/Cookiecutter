@@ -1,0 +1,56 @@
+version: 0.2
+
+env:
+  shell: bash
+  variables:
+    TF_IN_AUTOMATION: true
+    ROLE_ACTION: plan
+  parameter-store:
+    DOCKERHUB_USERNAME: "/devops/build/dockerhubUsername"
+    DOCKERHUB_PASSWORD: "/devops/build/dockerhubPassword"
+    SONAR_TOKEN: "/devops/build/sonarToken"
+    DD_APP_KEY: "/logging/datadog_app_key"
+
+phases:
+  pre_build:
+    commands:
+      - echo Installing tools
+      - policy_dir=policy_test
+      - ./bin/install_cb_tools.sh $policy_dir
+      - export PATH="$HOME/.tfenv/bin:$HOME/.guard/bin:$PATH"
+      - extract_dir=$(find $policy_dir -maxdepth 1 -type d -name '*-terraform-policies-*' -print)
+      - echo Installing AWS Codebuild Extras
+      - curl -fsSL https://raw.githubusercontent.com/thii/aws-codebuild-extras/master/install >> extras.sh
+      - . ./extras.sh
+      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      - export CODEARTIFACT_AUTH_TOKEN=`aws codeartifact get-authorization-token --domain happymoney --domain-owner 730502903637 --query authorizationToken --output text`
+
+  build:
+    commands:
+      - |
+        set -e
+        echo "Test terraform fmt"
+        terraform fmt -recursive -check=true -write=false
+      - |
+        set -euo pipefail
+        echo "Run terraform plan"
+        pushd terraform
+        terragrunt run-all init -lock=false
+        terragrunt run-all plan -lock=false --out tfplan
+        terragrunt run-all validate
+        popd
+      - |
+        set -euo pipefail
+        echo "Run Policy-as-code test"
+        tfplan_files=( $(find ./terraform -type f -name 'tfplan' -print) )
+        for filepath in "${tfplan_files[@]}"
+        do
+          pushd $(dirname $filepath)
+          terragrunt show -json tfplan > tfplan.json
+          cfn-guard validate -d tfplan.json -r ${CODEBUILD_SRC_DIR}/$extract_dir/cfn-guard/rules
+          popd
+        done
+      - ./gradlew check
+      - ./gradlew test
+      - ./gradlew sonarqube -Dsonar.login=$SONAR_TOKEN -Dsonar.branch.name=$CODEBUILD_GIT_BRANCH
+

@@ -1,0 +1,33 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-components: always
+      show-details: always
+    loggers:
+      enabled: true
+
+logging:
+  config: classpath:log4j2-local.yml
+
+spring:
+  kafka:
+    bootstrap-servers: localhost:29092
+    properties:
+      schema:
+        registry:
+          url: http://localhost:8081
+
+amazon:
+  dynamodb:
+    endpoint: http://localhost:8000/
+    region: local
+    accesskey: test
+    secretkey: test
+
+swagger:
+  base:
+    url: localhost:{{ cookiecutter.port }}

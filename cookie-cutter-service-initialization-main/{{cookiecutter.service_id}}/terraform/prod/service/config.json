@@ -1,0 +1,83 @@
+{
+    "service_name": "{{ cookiecutter.service_id }}",
+    "ecs_settings": {
+        "container_cpu": 1024,
+        "container_memory": 2048,
+        "container_service_ports": [
+            {{ cookiecutter.port }}
+        ],
+        "network_access_cidrs": [
+            "10.231.4.0/24",
+            "172.25.0.0/18",
+            "10.230.0.0/18"
+        ],
+        "ecr_repo_arn": "arn:aws:ecr:us-east-1:730502903637:repository/{{ cookiecutter.service_id }}",
+        "ecr_repo_url": "730502903637.dkr.ecr.us-east-1.amazonaws.com/{{ cookiecutter.service_id }}",
+        "environment_variables": [
+            {
+                "name": "SPRING_PROFILES_ACTIVE",
+                "value": "prod"
+            }
+        ],
+        "secret_variables": [],
+        "max_capacity": 9,
+        "min_capacity": 3,
+        "envoy_image": "840364872350.dkr.ecr.us-east-1.amazonaws.com/aws-appmesh-envoy:v1.21.0.0-prod",
+        "envoy_ecr_arn": "arn:aws:ecr:us-east-1:840364872350:repository/aws-appmesh-envoy",
+        "ecs_alarms_cpu_low_threshold": 20,
+        "ecs_alarms_cpu_high_threshold": 70,
+        "ecs_alarms_memory_low_threshold": 30,
+        "ecs_alarms_memory_high_threshold": 70,
+        "fluentbit_config_file": "parse-json",
+        "capacity_provider_strategies": [],
+        "targets": {},
+        "permission_boundary_name": "ecs_srv_role-pb",
+        "env_file_bucket_arn": "",
+        "env_file_kms_arn": "arn:aws:kms:us-east-1:730502903637:key/ad08e383-17d2-4d8c-ad18-4024dff8ee22"
+    },
+    "health_check_custom_config": {
+        "failure_threshold": 2
+    },
+    "mesh": {
+        "backends": [],
+        "listeners": [
+            {
+                "health_check": {
+                    "healthy_threshold": 2,
+                    "interval_millis": 15000,
+                    "port": {{ cookiecutter.port }},
+                    "protocol": "tcp",
+                    "timeout_millis": 5000,
+                    "unhealthy_threshold": 4
+                },
+                "port_mapping": [
+                    {
+                        "port": {{ cookiecutter.port }},
+                        "protocol": "http"
+                    }
+                ]
+            }
+        ],
+        "nodes": [
+            "green"
+        ],
+        "route_listener": {
+            "port": {{ cookiecutter.port }},
+            "protocol": "http"
+        },
+        "routes": [
+            {
+                "path": "/",
+                "weighted_target": {
+                    "green": 100
+                }
+            }
+        ],
+        "virtual_gateway_path": "/{{ cookiecutter.service_id }}",
+        "virtual_gateway_name": "mesh-gateway"
+    },
+    "dynamodb_tables": {},
+    "tags": {
+        "public-facing": "false"
+    }
+}

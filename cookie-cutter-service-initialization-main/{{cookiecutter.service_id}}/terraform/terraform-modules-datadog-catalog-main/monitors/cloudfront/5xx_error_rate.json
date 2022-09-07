@@ -1,0 +1,12 @@
+{
+    "name": "cloudfront.5xx: ${name}",
+    "type": "metric alert",
+    "message": "5xx Monitor triggered. Notify: ${notification_targets}",
+    "query": "sum(last_5m):max:aws.cloudfront.5xx_error_rate{apiid:${distribution_id}} >= 1",
+    "evaluation_delay": 900,
+    "require_full_window": false,
+    "monitor_thresholds": {
+        "critical": 1,
+        "critical_recovery": 0
+    }
+}

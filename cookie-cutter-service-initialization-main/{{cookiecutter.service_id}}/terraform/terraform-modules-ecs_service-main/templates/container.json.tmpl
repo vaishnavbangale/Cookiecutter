@@ -1,0 +1,24 @@
+[
+  {
+    "name": "${application_name}",
+    "image": "${ecs_container_image}",
+    "user": ${user},
+    "dockerLabels": ${dockerLabels},
+    "command": ${task_start_commands},
+    "entrypoint": ${task_entrypoint_commands},
+    "cpu": ${container_cpu},
+    "memory": ${container_memory},
+    "essential": true,
+    "stopTimeout": ${container_stop_timeout},
+    "environment": ${environment_variables},
+    "secrets": ${secret_variables},
+    "environmentFiles": ${environmentFiles},
+    "mountPoints": ${mountPoints},
+    "ulimits": ${ulimits},
+    "linuxParameters": ${linux_parameters},
+    "portMappings": ${container_port_mapping},
+    "dependsOn": ${depends_on},
+    ${container_log_configuration}
+    "healthCheck": ${healthcheck}
+  }
+]

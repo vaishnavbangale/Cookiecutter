@@ -1,0 +1,12 @@
+{
+    "name": "apigateway.5xxerror: ${name}",
+    "type": "metric alert",
+    "message": "5xxerror Monitor triggered. Notify: ${notification_targets}",
+    "query": "sum(last_5m):max:aws.apigateway.5xxerror{apiid:${api_id}} >= 1",
+    "evaluation_delay": 900,
+    "require_full_window": false,
+    "monitor_thresholds": {
+        "critical": 1,
+        "critical_recovery": 0
+    }
+}

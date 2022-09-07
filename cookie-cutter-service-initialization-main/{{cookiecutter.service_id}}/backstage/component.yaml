@@ -1,0 +1,15 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: {{ cookiecutter.service_id }}
+  annotations:
+    github.com/project-slug: HappyMoneyInc/{{ cookiecutter.service_id }}
+    backstage.io/techdocs-ref: dir:.
+  links:
+    - url: https://github.com/HappyMoneyInc/{{ cookiecutter.service_id }}
+      title: GitHub
+      icon: github
+spec:
+  type: service
+  lifecycle: experimental
+  owner: {{ cookiecutter.team_name }}-Developers

@@ -1,0 +1,13 @@
+---
+name: ecs_service_module
+title: ECS service module test
+license: Apache-2.0
+summary: AWS inspec profile to test against ecs service test deployment
+version: 0.1.0
+inspec_version: '~> 4'
+depends:
+  - name: hm-inspec-aws
+    git: "git@github.com:HappyMoneyInc/hm-inspec-aws.git"
+    tag: v1.6.3
+supports:
+  - platform: aws

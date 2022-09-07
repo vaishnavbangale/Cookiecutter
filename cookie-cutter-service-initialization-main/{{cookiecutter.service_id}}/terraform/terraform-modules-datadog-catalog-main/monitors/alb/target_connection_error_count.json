@@ -1,0 +1,10 @@
+{
+    "name": "alb.target_connection_error_count: ${lb_name}",
+    "type": "metric alert",
+    "query": "sum(last_5m):sum:aws.applicationelb.target_connection_error_count{host:${lb_dns_name}}.as_count() > 0",
+    "message": "target_connection_error_count monitor triggered for ${lb_name}. Error monitoring on number of attempted but failed connections between the load balancer and backend instance. Notify: ${notification_targets}",
+    "evaluation_delay": 900,
+    "monitor_thresholds": {
+        "critical": 0
+    }
+}

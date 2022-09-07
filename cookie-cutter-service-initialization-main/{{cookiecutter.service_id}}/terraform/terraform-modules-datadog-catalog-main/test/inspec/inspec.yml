@@ -1,0 +1,13 @@
+---
+name: dd_catalog_module
+title: Datadog catalog module test
+license: Apache-2.0
+summary: Inspec profile to test datadog catalog terraform module
+version: 0.1.0
+inspec_version: '~> 4'
+depends:
+  - name: hm-inspec-aws
+    git: "git@github.com:HappyMoneyInc/hm-inspec-aws.git"
+    tag: v1.6.0
+supports:
+  - platform: aws

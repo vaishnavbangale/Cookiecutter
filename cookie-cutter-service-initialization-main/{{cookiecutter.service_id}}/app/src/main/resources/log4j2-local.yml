@@ -1,0 +1,21 @@
+Configuration:
+  name: Default
+
+  Appenders:
+    Console:
+      name: Console_Appender
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "%d{yyyy-MM-ddTHH:mm:ss.SSS} [%level] [%t] %c{1} - %msg%n"
+
+  Loggers:
+    Logger:
+      - name: {{cookiecutter.java_package}};
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: Console_Appender
+    Root:
+      level: info
+      AppenderRef:
+        - ref: Console_Appender

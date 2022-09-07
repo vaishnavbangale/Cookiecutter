@@ -1,0 +1,4 @@
+{
+    "version": "v3.5.0",
+    "source_pattern": "^[^/]+\\.tf$|^modules/.*\\.tf$"
+}

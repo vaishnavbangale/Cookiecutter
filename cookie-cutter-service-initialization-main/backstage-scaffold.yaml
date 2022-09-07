@@ -1,0 +1,164 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: service-initialization-template
+  title: Service Initialization Automation
+  description: Create & Deploy a Spring Boot microservice
+  tags:
+    - spring
+    - codepipeline
+    - microservice
+    - java
+    - cookiecutter
+spec:
+  owner: engineering-productivity-developers
+  type: service
+
+  parameters:
+    - title: Service Configuration
+      required:
+        - service_name
+      properties:
+        service_name:
+          title: service_name
+          type: string
+          ui:placeholder: Cookiecutter Service
+        repository_name:
+          title: repository_name
+          type: string
+          ui:field: CookieCutterFieldExtension
+        port:
+          title: port
+          type: string
+          ui:field: CookieCutterFieldExtension
+        project_domain:
+          title: project_domain
+          type: string
+          ui:field: CookieCutterFieldExtension
+          ui:placeholder: happymoney.com
+        service_id:
+          title: service_id
+          type: string
+          ui:field: CookieCutterFieldExtension
+          ui:placeholder: cookiecutter_service
+        package_name:
+          title: package_name
+          type: string
+          ui:field: CookieCutterFieldExtension
+          ui:placeholder: cookiecutter-service
+        java_package:
+          title: java_package
+          type: string
+          ui:field: CookieCutterFieldExtension
+          ui:placeholder: com.happymoney.cookiecutter-service
+        package_dir:
+          title: package_dir
+          type: string
+          ui:field: CookieCutterFieldExtension
+          ui:placeholder: com/happymoney/cookiecutter-service
+        int_package:
+          title: int_package
+          type: string
+          ui:field: CookieCutterFieldExtension
+          ui:placeholder: com.happymoney.cookiecutterservice
+
+    - title: Additional Configuration
+      required:
+        - teamName
+      properties:
+        teamName:
+          title: teamName
+          type: string
+          enum:
+            - api-platform
+            - api-product
+            - BI_Team
+            - CPS
+            - CRM
+            - DataScience
+            - Data_Confidence
+            - DevOps
+            - engineering-productivity
+            - Frontend
+            - InfoSec
+            - Leads
+            - LoanServices
+            - Loan_Mgmt_Portal
+            - LossForecasting
+            - PartnerAssetMgt
+            - Quality_Eng
+        createPipelines:
+          title: Create Code Pipelines for the repo
+          type: boolean
+          default: false
+
+  steps:
+    - id: generateParams
+      name: Generate Parameters
+      action: happymoney:generate-parameters
+      input:
+        serviceName: ${{ parameters.service_name }}
+
+    - id: createRepo
+      name: Create Repository
+      action: happymoney:create-repo
+      input:
+        teamName: ${{ parameters.teamName }}
+        repoName: ${{ steps.generateParams.output.repo_name }}
+
+    - id: enableSonar
+      name: Provision Sonarcloud project
+      action: happymoney:enable-sonar
+      input:
+        repoName: ${{ steps.generateParams.output.repo_name }}
+
+    - id: generate
+      name: Generate Project
+      action: fetch:template
+      input:
+        url: ./{{cookiecutter.service_id}}
+        cookiecutterCompat: true
+        values:
+          service_name: ${{ parameters.service_name }}
+          port: '8080'
+          team_name: ${{ parameters.teamName }}
+          project_domain: happymoney.com
+          service_id: ${{ steps.generateParams.output.service_id }}
+          package_name: ${{ steps.generateParams.output.package_name }}
+          java_package: ${{ steps.generateParams.output.java_package }}
+          package_dir: ${{ steps.generateParams.output.package_dir }}
+          int_package: ${{ steps.generateParams.output.int_package }}
+
+    - id: cleanup
+      name: Clean Up Repository
+      action: fs:delete
+      input:
+        files: [ 'Features.md' ]
+
+    - id: publish
+      name: Publish to GitHub
+      action: happymoney:publish-repo
+      input:
+        repoName: ${{ steps.generateParams.output.repo_name }}
+
+    - id: applyBranchProtection
+      name: Apply Standardized Github Settings
+      action: happymoney:apply-branch-protection
+      input:
+        teamName: ${{ parameters.teamName }}
+        repoName: ${{ steps.generateParams.output.repo_name }}
+
+    - id: createPipelines
+      name: Create Pipelines
+      if: ${{ parameters.createPipelines }}
+      action: happymoney:create-pipeline
+      input:
+        teamName: ${{ parameters.teamName }}
+        repoName: ${{ steps.generateParams.output.repo_name }}
+
+    - id: register
+      name: Register Component
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: '/backstage/catalog-info.yaml'

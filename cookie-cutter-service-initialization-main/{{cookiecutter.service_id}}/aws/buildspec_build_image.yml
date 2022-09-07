@@ -1,0 +1,62 @@
+version: 0.2
+
+env:
+  parameter-store:
+    DOCKERHUB_USERNAME: "/devops/build/dockerhubUsername"
+    DOCKERHUB_PASSWORD: "/devops/build/dockerhubPassword"
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - echo Uninstalling AWS CLI V1
+      - rm -rf /usr/local/aws
+      - rm -rf /root/.pyenv/shims/aws
+      - echo Installing AWS CLI V2
+      - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      - unzip -qq awscliv2.zip
+      - ./aws/install
+      - aws --version
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 730502903637.dkr.ecr.us-east-1.amazonaws.com
+      - docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
+      - REPOSITORY_URI=730502903637.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_Repo_Name}
+      - COMMIT_SHA=$(git rev-parse HEAD || echo $Commit)
+      - COMMIT_VERSION=$(git describe --tags --always || echo $Commit)
+      - IMAGE_EXISTS=$(aws ecr describe-images --repository-name=${ECR_Repo_Name} --image-ids=imageTag=$COMMIT_VERSION 2> /dev/null | jq '.imageDetails[0].imageTags[0]' -r)
+      - CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain happymoney --domain-owner 730502903637 --query authorizationToken --output text)
+      - echo ECR_Repo_Name ${ECR_Repo_Name}
+      - echo Commit ${COMMIT_SHA}
+      - echo Version ${COMMIT_VERSION}
+      - echo Desired tag ${ImageTag}
+      - "if [ ! -z $IMAGE_EXISTS ]; then echo Image already exists; fi"
+
+  build:
+    commands:
+      - echo Build the application.
+      - |
+          if [ -z $IMAGE_EXISTS ]; then
+            DOCKER_BUILDKIT=1 BUILDKIT_INLINE_CACHE=1 docker build --build-arg CODEARTIFACT_AUTH_TOKEN=${CODEARTIFACT_AUTH_TOKEN} -t happymoney/${ECR_Repo_Name} .
+            docker tag happymoney/${ECR_Repo_Name} $REPOSITORY_URI:$COMMIT_SHA
+            docker tag happymoney/${ECR_Repo_Name} $REPOSITORY_URI:$COMMIT_VERSION
+          fi
+
+  post_build:
+    commands:
+      - |
+          if [ -z $IMAGE_EXISTS ]; then
+            echo Build completed on `date`
+            echo Pushing the Docker images...
+            docker push $REPOSITORY_URI:$COMMIT_SHA
+            docker push $REPOSITORY_URI:$COMMIT_VERSION
+          fi
+      - 'payload="{\"ECR_Repo\": \""${ECR_Repo_Name}"\", \"Environment\": \""${Environment}"\", \"Commit\": \""${COMMIT_SHA}"\"}"'
+      - echo $payload
+      - aws lambda invoke --function-name promoteImage --payload "$payload" --invocation-type Event --cli-binary-format raw-in-base64-out promoteImage.out
+      - |
+        for env in dev qa qa1 qa2 qa3 uat stage prod
+        do
+          printf '[{"name":"%s","imageUri":"%s"}]' "${ECS_Container_Name}" "$REPOSITORY_URI:$env" > imagedefinitions_$env.json
+        done
+artifacts:
+  files:
+    - imagedefinitions_*.json

@@ -1,0 +1,33 @@
+version: 0.2
+
+env:
+  shell: bash
+  variables:
+    TF_IN_AUTOMATION: true
+    ROLE_ACTION: deploy
+  parameter-store:
+    DD_APP_KEY: "/logging/datadog_app_key"
+phases:
+  install:
+    commands:
+      - echo Installing tools
+      - policy_dir=policy_test
+      - ./bin/install_cb_tools.sh $policy_dir
+      - export PATH="$HOME/.tfenv/bin:$HOME/.guard/bin:$PATH"
+      - extract_dir=$(find $policy_dir -maxdepth 1 -type d -name '*-terraform-policies-*' -print)
+  build:
+    commands:
+      - |
+        set -e
+        echo "Test terraform fmt"
+        terraform fmt -recursive -check=true -write=false
+      - |
+        set -euo pipefail
+        pushd terraform/${Environment}/service
+        terragrunt init
+        terragrunt plan --out tfplan
+        terragrunt validate
+        terragrunt show -json tfplan > tfplan.json
+        cfn-guard validate -d tfplan.json -r ${CODEBUILD_SRC_DIR}/$extract_dir/cfn-guard/rules
+        terragrunt apply --auto-approve tfplan
+        popd
